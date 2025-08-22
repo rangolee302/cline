@@ -3,9 +3,7 @@
 import type { Anthropic } from "@anthropic-ai/sdk"
 import { type ToolUseName, toolUseNames } from "@core/assistant-message"
 import { type Config, type Message, Ollama, type ToolCall } from "ollama"
-
 import { ApiHandlerOptions, type ModelInfo, openAiModelInfoSaneDefaults } from "../../shared/api"
-
 import type { ApiHandler } from "../"
 import { withRetry } from "../retry"
 import { convertToOllamaMessages } from "../transform/ollama-format"
@@ -88,7 +86,7 @@ export class OllamaHandler implements ApiHandler {
 					model: this.getModel().id,
 					messages: ollamaMessages,
 					stream: true,
-					// options: { num_ctx: Number(this.options.ollamaApiOptionsCtxNum) },
+					options: { num_ctx: 8192 }, // Number(this.options.ollamaApiOptionsCtxNum) },
 					keep_alive: "30m",
 				}),
 			})
@@ -130,7 +128,6 @@ export class OllamaHandler implements ApiHandler {
 
 					if (msg.thinking) yield { type: "reasoning", reasoning: msg.thinking }
 					if (msg.content) yield { type: "text", text: msg.content }
-
 					if (msg.tool_calls) {
 						for (const call of chunk.message.tool_calls) {
 							const { name, arguments: args } = call.function
@@ -145,9 +142,17 @@ export class OllamaHandler implements ApiHandler {
 							yield { type: "text", text: xml }
 						}
 					}
-
 					if (chunk.done) {
 						console.log("Stream complete (done=true).")
+						yield {
+							type: "usage",
+							inputTokens: chunk.prompt_eval_count || 0,
+							outputTokens: chunk.eval_count || 0,
+							cacheWriteTokens: 0,
+							cacheReadTokens: 0,
+							thoughtsTokenCount: 0,
+							totalCost: 0,
+						}
 						isDone = true
 						break
 					}
@@ -171,7 +176,7 @@ export class OllamaHandler implements ApiHandler {
 			.map(([k, v]) => `<${k}>${v}</${k}>`)
 			.join("\n")
 
-		console.log(`Cline XML \n${inner}`)
+		console.log(`Cline XML ${tag}\n${inner}`)
 		return `<${tag}>\n${inner}\n</${tag}>`
 	}
 
@@ -221,6 +226,8 @@ export class OllamaHandler implements ApiHandler {
 				return "search_files"
 			case "repo_browser.list_code_definition_names":
 				return "list_code_definition_names"
+			case "container.exec":
+				return "execute_command"
 			default:
 				return name
 		}
