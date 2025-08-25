@@ -1,8 +1,8 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as diff from "diff"
 import * as path from "path"
-import { ClineIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/ClineIgnoreController"
 import { Mode } from "@/shared/storage/types"
+import { ClineIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/ClineIgnoreController"
 
 export const formatResponse = {
 	duplicateFileReadNotice: () =>
@@ -52,7 +52,7 @@ Otherwise, if you have not completed the task and do not need additional informa
 		images?: string[],
 		fileString?: string,
 	): string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> => {
-		let toolResultOutput = []
+		const toolResultOutput = []
 
 		if (!(images && images.length > 0) && !fileString) {
 			return text
@@ -281,22 +281,4 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 		: []
 }
 
-const toolUseInstructionsReminder = `# Reminder: Instructions for Tool Use
-
-Tool uses are formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Here's the structure:
-
-<tool_name>
-<parameter1_name>value1</parameter1_name>
-<parameter2_name>value2</parameter2_name>
-...
-</tool_name>
-
-For example:
-
-<attempt_completion>
-<result>
-I have completed the task...
-</result>
-</attempt_completion>
-
-Always adhere to this format for all tool uses to ensure proper parsing and execution.`
+const toolUseInstructionsReminder = `# Reminder: Instructions for Tool Use. Always include a tools use in your response`

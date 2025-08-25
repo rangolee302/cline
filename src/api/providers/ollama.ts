@@ -20,7 +20,7 @@ interface OllamaHandlerOptions {
 	think?: boolean
 }
 
-const DEFAULT_CONTEXT_WINDOW = 32768
+const DEFAULT_CONTEXT_WINDOW = 12288
 
 export class OllamaHandler implements ApiHandler {
 	private options: OllamaHandlerOptions
@@ -86,7 +86,7 @@ export class OllamaHandler implements ApiHandler {
 					model: this.getModel().id,
 					messages: ollamaMessages,
 					stream: true,
-					options: { num_ctx: 8192 }, // Number(this.options.ollamaApiOptionsCtxNum) },
+					options: { num_ctx: Number(this.options.ollamaApiOptionsCtxNum) },
 					keep_alive: "30m",
 				}),
 			})
@@ -123,8 +123,8 @@ export class OllamaHandler implements ApiHandler {
 						continue
 					}
 
-					const msg = chunk.message
 					console.log("Received chunk:", chunk)
+					const msg = chunk.message
 
 					if (msg.thinking) yield { type: "reasoning", reasoning: msg.thinking }
 					if (msg.content) yield { type: "text", text: msg.content }
@@ -224,6 +224,8 @@ export class OllamaHandler implements ApiHandler {
 				return "list_files"
 			case "repo_browser.search_files":
 				return "search_files"
+			case "repo_browser.create_file":
+				return "write_to_file"
 			case "repo_browser.list_code_definition_names":
 				return "list_code_definition_names"
 			case "container.exec":
